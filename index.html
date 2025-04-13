@@ -4,8 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hoppernet</title>
+    <style>body {
+    margin: 0;
+    padding: 0;
+    background-color:rgb(198, 227, 236);
+    overflow-x: hidden; /* Entfernt horizontales Scrollen */
+    width: 100%;
+}
+
+/* Navigation */
+nav {
+    height: 90px;
+    width: 100%;
+    background-color: rgb(255, 255, 255);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.144);
+
+    display: flex; /* Flexbox aktivieren */
+    align-items: center; /* Elemente vertikal zentrieren */
+    justify-content: space-between; /* Platz zwischen Logo und Links */
+    padding: 0 20px; /* Innenabstand links und rechts */
+}
+
+nav ul {
+    list-style-type: none; /* Standard-Punkte der Liste entfernen */
+    margin: 0;
+    padding: 0;
+    display: flex; /* Links horizontal anordnen */
+    gap: 40px; /* Abstand zwischen den Links */
+}
+
+nav li {
+    display: inline-block; /* Inline-Block-Element für Links */
+}
+
+nav li a {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 24px;
+    color: #333;
+    text-decoration: none; /* Unterstrich entfernen */
+}
+nav ul li :hover{
+    color: sienna;
+    text-decoration: underline;
+}
+
+nav ul li .active {
+    color: sienna; /* Aktiver Link in Blau */
+}
+
+nav img.navimg {
+    height: 45px; /* Größe des Logos */
+}</style>
 </head>
 <body>
+      <nav>
+    <ul>
+      <li><a class="active" href="index.html"><img class="navimg" src="pictures/logo.png" alt="Website-Logo"></a></li>
+      <li><a href="help.html">help</a></li>
+      <li><a href="download.html">Download</a></li>
+      <li><a href="forum.html">Forum</a></li>
+      <li><a href="dc.html">Discord</a></li>
+    </ul>
+  </nav>
     <h1>Hoppernet</h1>
 </body>
 </html>
