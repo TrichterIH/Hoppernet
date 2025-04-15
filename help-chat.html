@@ -85,5 +85,97 @@
     }
   </script>
 
+
+  
+
+  
+
+
+  
+
+
+  <h1>Deine lernende Chat-AI</h1>
+  <div id="chat-box"></div>
+
+  <input type="text" id="user-input" placeholder="Stell eine Frage..." />
+  <button onclick="sendMessage()">Senden</button>
+
+  <script>
+    // Lade die Wissensbasis aus localStorage oder starte leer
+    let knowledgeBase = JSON.parse(localStorage.getItem('knowledgeBase')) || {};
+
+    function saveKnowledgeBase() {
+      localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
+    }
+
+    function sendMessage() {
+      const inputField = document.getElementById('user-input');
+      const question = inputField.value.trim().toLowerCase();
+      if (!question) return;
+
+      displayMessage("Du", question);
+
+      if (knowledgeBase[question]) {
+        const answers = knowledgeBase[question];
+        const mostUsed = Object.entries(answers).sort((a, b) => b[1] - a[1])[0][0];
+        displayMessage("AI", mostUsed);
+      } else {
+        displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
+        waitForAnswer(question);
+      }
+
+      inputField.value = '';
+    }
+
+    function waitForAnswer(originalQuestion) {
+      const inputField = document.getElementById('user-input');
+      const button = document.querySelector('button');
+
+      button.disabled = true;
+
+      const handler = () => {
+        const answer = inputField.value.trim();
+        if (!answer) return;
+
+        displayMessage("Du", answer);
+        displayMessage("AI", "Danke! Ich habe das gelernt.");
+
+        if (!knowledgeBase[originalQuestion]) {
+          knowledgeBase[originalQuestion] = {};
+        }
+
+        if (!knowledgeBase[originalQuestion][answer]) {
+          knowledgeBase[originalQuestion][answer] = 1;
+        } else {
+          knowledgeBase[originalQuestion][answer]++;
+        }
+
+        saveKnowledgeBase();
+
+        inputField.value = '';
+        inputField.removeEventListener('keydown', enterHandler);
+        button.disabled = false;
+        button.onclick = sendMessage;
+      };
+
+      const enterHandler = (e) => {
+        if (e.key === 'Enter') handler();
+      };
+
+      inputField.addEventListener('keydown', enterHandler);
+      button.onclick = handler;
+    }
+
+    function displayMessage(sender, text) {
+      const chatBox = document.getElementById('chat-box');
+      const msg = document.createElement('div');
+      msg.className = 'message';
+      msg.innerHTML = `<span class="${sender === 'Du' ? 'user' : 'ai'}">${sender}:</span> ${text}`;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+  
+
 </body>
 </html>
