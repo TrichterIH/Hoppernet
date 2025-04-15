@@ -83,208 +83,146 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
 <script>
-  const defaultKnowledge = {
-    "was ist dein name": { "Ich bin deine Chat-AI!": { count: 1, rating: 0 } },
-    "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": { count: 1, rating: 0 } },
-    "wie funktioniert dein programm": { "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe die häufigste Antwort zurück.": { count: 1, rating: 0 } },
-    "was kannst du": { "Ich kann Fragen beantworten und neue Antworten lernen!": { count: 1, rating: 0 } }
-  };
+    let knowledgeBase = {};
 
-  let knowledgeBase = JSON.parse(localStorage.getItem('knowledgeBase')) || defaultKnowledge;
-  saveKnowledgeBase();
-
-  const fuse = new Fuse(Object.keys(knowledgeBase).map(q => ({ question: q })), {
-    includeScore: true,
-    threshold: 0.4,
-    keys: ['question']
-  });
-
-  function saveKnowledgeBase() {
-    localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
-  }
-
-  function sendMessage() {
-    const inputField = document.getElementById('user-input');
-    const question = inputField.value.trim().toLowerCase();
-    if (!question) return;
-
-    displayMessage("Du", question);
-
-    const result = fuse.search(question);
-    if (result.length > 0) {
-      const bestMatch = result[0].item.question;
-      const answers = knowledgeBase[bestMatch];
-      const sortedAnswers = Object.entries(answers).sort((a, b) => (b[1].count + b[1].rating) - (a[1].count + a[1].rating));
-      const bestAnswer = sortedAnswers[0][0];
-      displayMessage("AI", bestAnswer, bestMatch);
-    } else {
-      displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
-      waitForAnswer(question);
+    // 1. Wissen vom Server laden
+    async function loadKnowledgeBase() {
+      try {
+        const res = await fetch('/.netlify/functions/knowledge');
+        if (res.ok) {
+          knowledgeBase = await res.json();
+        } else {
+          console.error("Fehler beim Laden:", res.status);
+        }
+      } catch (err) {
+        console.error("Verbindung fehlgeschlagen:", err);
+      }
     }
 
-    inputField.value = '';
-  }
-
-  function displayMessage(sender, text, question = null) {
-    const chatBox = document.getElementById('chat-box');
-    const msg = document.createElement('div');
-    msg.className = 'message';
-
-    const span = document.createElement('span');
-    span.className = sender === 'Du' ? 'user' : 'ai';
-    span.textContent = `${sender}:`;
-
-    msg.appendChild(span);
-    msg.appendChild(document.createTextNode(` ${text}`));
-
-    chatBox.appendChild(msg);
-
-    if (sender === "AI" && question) {
-      displayRatingButtons(msg, text, question);
+    // 2. Wissen auf dem Server speichern
+    function saveKnowledgeBase() {
+      fetch('/.netlify/functions/knowledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(knowledgeBase)
+      }).catch(err => console.error("Fehler beim Speichern:", err));
     }
 
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
+    // Sofort Wissen laden beim Start
+    loadKnowledgeBase();
 
-  function displayRatingButtons(messageElement, answer, question) {
-    const buttonsDiv = document.createElement('div');
-    buttonsDiv.className = 'rating-buttons';
+    function sendMessage() {
+      const inputField = document.getElementById('user-input');
+      const question = inputField.value.trim().toLowerCase();
+      if (!question) return;
 
-    const thumbsUp = document.createElement('button');
-    thumbsUp.textContent = "👍";
-    thumbsUp.onclick = () => rateAnswer(question, answer, 1);
+      displayMessage("Du", question);
 
-    const thumbsDown = document.createElement('button');
-    thumbsDown.textContent = "👎";
-    thumbsDown.onclick = () => rateAnswer(question, answer, -1);
-
-    buttonsDiv.appendChild(thumbsUp);
-    buttonsDiv.appendChild(thumbsDown);
-
-    messageElement.appendChild(buttonsDiv);
-  }
-
-  function rateAnswer(question, answer, rating) {
-    if (!knowledgeBase[question]) {
-      knowledgeBase[question] = {};
-    }
-
-    if (!knowledgeBase[question][answer]) {
-      knowledgeBase[question][answer] = { count: 1, rating: rating };
-    } else {
-      knowledgeBase[question][answer].count++;
-      knowledgeBase[question][answer].rating += rating;
-    }
-
-    saveKnowledgeBase();
-  }
-
-  function waitForAnswer(originalQuestion) {
-    const inputField = document.getElementById('user-input');
-    const button = document.querySelector('button');
-
-    button.disabled = true;
-
-    const handler = () => {
-      const answer = inputField.value.trim();
-      if (!answer) return;
-
-      displayMessage("Du", answer);
-      displayMessage("AI", "Danke! Ich habe das gelernt.");
-
-      if (!knowledgeBase[originalQuestion]) {
-        knowledgeBase[originalQuestion] = {};
+      if (knowledgeBase[question]) {
+        const answers = knowledgeBase[question];
+        const mostUsed = Object.entries(answers).sort((a, b) => b[1].count - a[1].count)[0][0];
+        displayMessage("AI", mostUsed, question);
+      } else {
+        displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
+        waitForAnswer(question);
       }
 
-      if (!knowledgeBase[originalQuestion][answer]) {
-        knowledgeBase[originalQuestion][answer] = { count: 1, rating: 0 };
+      inputField.value = '';
+    }
+
+    function waitForAnswer(originalQuestion) {
+      const inputField = document.getElementById('user-input');
+      const button = document.querySelector('button');
+
+      button.disabled = true;
+
+      const handler = () => {
+        const answer = inputField.value.trim();
+        if (!answer) return;
+
+        displayMessage("Du", answer);
+        displayMessage("AI", "Danke! Ich habe das gelernt.");
+
+        if (!knowledgeBase[originalQuestion]) {
+          knowledgeBase[originalQuestion] = {};
+        }
+
+        if (!knowledgeBase[originalQuestion][answer]) {
+          knowledgeBase[originalQuestion][answer] = { count: 1, rating: 0 };
+        } else {
+          knowledgeBase[originalQuestion][answer].count++;
+        }
+
+        saveKnowledgeBase();
+
+        inputField.value = '';
+        inputField.removeEventListener('keydown', enterHandler);
+        button.disabled = false;
+        button.onclick = sendMessage;
+      };
+
+      const enterHandler = (e) => {
+        if (e.key === 'Enter') handler();
+      };
+
+      inputField.addEventListener('keydown', enterHandler);
+      button.onclick = handler;
+    }
+
+    function displayMessage(sender, text, question = null) {
+      const chatBox = document.getElementById('chat-box');
+      const msg = document.createElement('div');
+      msg.className = 'message';
+
+      const span = document.createElement('span');
+      span.className = sender === 'Du' ? 'user' : 'ai';
+      span.textContent = `${sender}:`;
+
+      msg.appendChild(span);
+      msg.appendChild(document.createTextNode(` ${text}`));
+
+      chatBox.appendChild(msg);
+
+      if (sender === "AI" && question) {
+        displayRatingButtons(msg, text, question);
+      }
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function displayRatingButtons(messageElement, answer, question) {
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.className = 'rating-buttons';
+
+      const thumbsUp = document.createElement('button');
+      thumbsUp.textContent = "👍";
+      thumbsUp.onclick = () => rateAnswer(question, answer, 1);
+
+      const thumbsDown = document.createElement('button');
+      thumbsDown.textContent = "👎";
+      thumbsDown.onclick = () => rateAnswer(question, answer, -1);
+
+      buttonsDiv.appendChild(thumbsUp);
+      buttonsDiv.appendChild(thumbsDown);
+
+      messageElement.appendChild(buttonsDiv);
+    }
+
+    function rateAnswer(question, answer, rating) {
+      if (!knowledgeBase[question]) {
+        knowledgeBase[question] = {};
+      }
+
+      if (!knowledgeBase[question][answer]) {
+        knowledgeBase[question][answer] = { count: 1, rating: rating };
       } else {
-        knowledgeBase[originalQuestion][answer].count++;
+        knowledgeBase[question][answer].count++;
+        knowledgeBase[question][answer].rating += rating;
       }
 
       saveKnowledgeBase();
-      fuse.setCollection(Object.keys(knowledgeBase).map(q => ({ question: q })));
-
-      inputField.value = '';
-      inputField.removeEventListener('keydown', enterHandler);
-      button.disabled = false;
-      button.onclick = sendMessage;
-    };
-
-    const enterHandler = (e) => {
-      if (e.key === 'Enter') handler();
-    };
-
-    inputField.addEventListener('keydown', enterHandler);
-    button.onclick = handler;
-  }
-  let isLocked = false;
-const adminPassword = "xP8¥k#H68nG)"; // Ändere das nach Wunsch
-
-function verifyCode() {
-  if (isLocked) return alert("Zu viele Versuche. Bitte warte 5 Sekunden.");
-  const input = document.getElementById("admin-code").value;
-  if (input === adminPassword) {
-    document.getElementById("admin-panel").style.display = "block";
-    document.getElementById("login-btn").disabled = true;
-    showKnowledge();
-  } else {
-    alert("Falscher Code!");
-    isLocked = true;
-    setTimeout(() => {
-      isLocked = false;
-    }, 5000);
-  }
-}
-
-function showKnowledge() {
-  const container = document.getElementById("knowledge-list");
-  container.innerHTML = "";
-  Object.entries(knowledgeBase).forEach(([question, answers]) => {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${question}</strong>`;
-    Object.entries(answers).forEach(([answer, data]) => {
-      const p = document.createElement("p");
-      p.innerHTML = `Antwort: "${answer}" (count: ${data.count}, rating: ${data.rating}) 
-        <button onclick="deleteEntry('${question}', \`${answer}\`)">Löschen</button>`;
-      div.appendChild(p);
-    });
-    container.appendChild(div);
-  });
-}
-
-function deleteEntry(question, answer) {
-  delete knowledgeBase[question][answer];
-  if (Object.keys(knowledgeBase[question]).length === 0) {
-    delete knowledgeBase[question];
-  }
-  saveKnowledgeBase();
-  fuse.setCollection(Object.keys(knowledgeBase).map(q => ({ question: q })));
-  showKnowledge();
-}
-
-function addKnowledge() {
-  const q = document.getElementById("new-question").value.trim().toLowerCase();
-  const a = document.getElementById("new-answer").value.trim();
-  if (!q || !a) return alert("Bitte Frage und Antwort ausfüllen.");
-
-  if (!knowledgeBase[q]) {
-    knowledgeBase[q] = {};
-  }
-  if (!knowledgeBase[q][a]) {
-    knowledgeBase[q][a] = { count: 1, rating: 0 };
-  } else {
-    knowledgeBase[q][a].count++;
-  }
-
-  saveKnowledgeBase();
-  fuse.setCollection(Object.keys(knowledgeBase).map(q => ({ question: q })));
-  showKnowledge();
-  document.getElementById("new-question").value = '';
-  document.getElementById("new-answer").value = '';
-}
-
-</script>
+    }
+  </script>
 
   
 <hr>
