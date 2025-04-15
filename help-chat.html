@@ -1,280 +1,141 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hoppernet-Help-Chat</title>
-  <style>
-   
-  .message {
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-  }
-
-  .user {
-    font-weight: bold;
-    color: blue;
-  }
-
-  .ai {
-    font-weight: bold;
-    color: green;
-    display: block;
-    margin-bottom: 2px;
-  }
-
-  .rating-buttons {
-    font-size: 12px;
-    margin-left: 10px;
-    display: flex;
-    gap: 5px;
-  }
-
-  .rating-buttons button {
-    padding: 3px 6px;
-    font-size: 12px;
-    cursor: pointer;
-    background-color: #eee;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-
-  .rating-buttons button:hover {
-    background-color: #ddd;
-  }
-
-
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: black;
-    }
-    #chat-box {
-      width: 100%;
-      max-width: 600px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
-    .button {
-      margin-top: 5px;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
-    }
-    .text {
-      color: white;
-    }
-  </style>
-</head>
-<body>
-  <h1 class="text">Hoppernet Help-Chat</h1>
-  <h3 class="text">Here you can chat with our developers or ChatAIif you hava some questions</h3>
-
-  <h1>Deine lernende Chat-AI</h1>
-  <div id="chat-box"></div>
-
-  <input type="text" id="user-input" placeholder="Stell eine Frage..." />
-  <button onclick="sendMessage()">Send</button>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
-  <!-- Füge das Firebase SDK in deinem HTML hinzu -->
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
 <script>
-  // Deine Firebase-Konfiguration (Ersetze diese mit deiner eigenen Firebase-Konfiguration)
-  const firebaseConfig = {
-    apiKey: "DEIN_API_KEY",
-    authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
-    projectId: "DEIN_PROJECT_ID",
-    storageBucket: "DEIN_PROJECT_ID.appspot.com",
-    messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
-    appId: "DEIN_APP_ID"
+  const defaultKnowledge = {
+    "was ist dein name": { "Ich bin deine Chat-AI!": { count: 1, rating: 0 } },
+    "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": { count: 1, rating: 0 } },
+    "wie funktioniert dein programm": { "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe die häufigste Antwort zurück.": { count: 1, rating: 0 } },
+    "was kannst du": { "Ich kann Fragen beantworten und neue Antworten lernen!": { count: 1, rating: 0 } }
   };
 
-  // Firebase-App initialisieren
-  const app = firebase.initializeApp(firebaseConfig);
+  let knowledgeBase = JSON.parse(localStorage.getItem('knowledgeBase')) || defaultKnowledge;
+  saveKnowledgeBase();
 
-  // Firestore initialisieren
-  const db = firebase.firestore(app);
+  const fuse = new Fuse(Object.keys(knowledgeBase).map(q => ({ question: q })), {
+    includeScore: true,
+    threshold: 0.4,
+    keys: ['question']
+  });
 
-  // Beispiel: Speichern von Daten
-  function getAnswer(question) {
-  db.collection("answers").where("question", "==", question).get()
-    .then((querySnapshot) => {
-      if (querySnapshot.empty) {
-        console.log("Keine Antwort gefunden");
-        displayMessage("AI", "Entschuldigung, ich weiß nicht, wie ich darauf antworten kann.");
+  function saveKnowledgeBase() {
+    localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
+  }
+
+  function sendMessage() {
+    const inputField = document.getElementById('user-input');
+    const question = inputField.value.trim().toLowerCase();
+    if (!question) return;
+
+    displayMessage("Du", question);
+
+    const result = fuse.search(question);
+    if (result.length > 0) {
+      const bestMatch = result[0].item.question;
+      const answers = knowledgeBase[bestMatch];
+      const sortedAnswers = Object.entries(answers).sort((a, b) => (b[1].count + b[1].rating) - (a[1].count + a[1].rating));
+      const bestAnswer = sortedAnswers[0][0];
+      displayMessage("AI", bestAnswer, bestMatch);
+    } else {
+      displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
+      waitForAnswer(question);
+    }
+
+    inputField.value = '';
+  }
+
+  function displayMessage(sender, text, question = null) {
+    const chatBox = document.getElementById('chat-box');
+    const msg = document.createElement('div');
+    msg.className = 'message';
+
+    const span = document.createElement('span');
+    span.className = sender === 'Du' ? 'user' : 'ai';
+    span.textContent = `${sender}:`;
+
+    msg.appendChild(span);
+    msg.appendChild(document.createTextNode(` ${text}`));
+
+    chatBox.appendChild(msg);
+
+    if (sender === "AI" && question) {
+      displayRatingButtons(msg, text, question);
+    }
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function displayRatingButtons(messageElement, answer, question) {
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'rating-buttons';
+
+    const thumbsUp = document.createElement('button');
+    thumbsUp.textContent = "👍";
+    thumbsUp.onclick = () => rateAnswer(question, answer, 1);
+
+    const thumbsDown = document.createElement('button');
+    thumbsDown.textContent = "👎";
+    thumbsDown.onclick = () => rateAnswer(question, answer, -1);
+
+    buttonsDiv.appendChild(thumbsUp);
+    buttonsDiv.appendChild(thumbsDown);
+
+    messageElement.appendChild(buttonsDiv);
+  }
+
+  function rateAnswer(question, answer, rating) {
+    if (!knowledgeBase[question]) {
+      knowledgeBase[question] = {};
+    }
+
+    if (!knowledgeBase[question][answer]) {
+      knowledgeBase[question][answer] = { count: 1, rating: rating };
+    } else {
+      knowledgeBase[question][answer].count++;
+      knowledgeBase[question][answer].rating += rating;
+    }
+
+    saveKnowledgeBase();
+  }
+
+  function waitForAnswer(originalQuestion) {
+    const inputField = document.getElementById('user-input');
+    const button = document.querySelector('button');
+
+    button.disabled = true;
+
+    const handler = () => {
+      const answer = inputField.value.trim();
+      if (!answer) return;
+
+      displayMessage("Du", answer);
+      displayMessage("AI", "Danke! Ich habe das gelernt.");
+
+      if (!knowledgeBase[originalQuestion]) {
+        knowledgeBase[originalQuestion] = {};
+      }
+
+      if (!knowledgeBase[originalQuestion][answer]) {
+        knowledgeBase[originalQuestion][answer] = { count: 1, rating: 0 };
       } else {
-        querySnapshot.forEach((doc) => {
-          console.log("Antwort: ", doc.data().answer);
-          displayMessage("AI", doc.data().answer);
-        });
-      }
-    })
-    .catch((error) => {
-      console.error("Fehler beim Abrufen der Antwort: ", error);
-    });
-}
-
-</script>
-
-<script>
-    let knowledgeBase = {};
-
-    // 1. Wissen vom Server laden
-    async function loadKnowledgeBase() {
-      try {
-        const res = await fetch('/.netlify/functions/knowledge');
-        if (res.ok) {
-          knowledgeBase = await res.json();
-        } else {
-          console.error("Fehler beim Laden:", res.status);
-        }
-      } catch (err) {
-        console.error("Verbindung fehlgeschlagen:", err);
-      }
-    }
-
-    // 2. Wissen auf dem Server speichern
-    function saveKnowledgeBase() {
-      fetch('/.netlify/functions/knowledge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(knowledgeBase)
-      }).catch(err => console.error("Fehler beim Speichern:", err));
-    }
-
-    // Sofort Wissen laden beim Start
-    loadKnowledgeBase();
-
-    function sendMessage() {
-  const inputField = document.getElementById('user-input');
-  const question = inputField.value.trim().toLowerCase();
-  if (!question) return;
-
-  // Zeige die Benutzeranfrage
-  displayMessage("Du", question);
-
-  // Abrufe und zeige die Antwort der AI
-  getAnswer(question);
-}
-
-
-
-    function waitForAnswer(originalQuestion) {
-      const inputField = document.getElementById('user-input');
-      const button = document.querySelector('button');
-
-      button.disabled = true;
-
-      const handler = () => {
-        const answer = inputField.value.trim();
-        if (!answer) return;
-
-        displayMessage("Du", answer);
-        displayMessage("AI", "Danke! Ich habe das gelernt.");
-
-        if (!knowledgeBase[originalQuestion]) {
-          knowledgeBase[originalQuestion] = {};
-        }
-
-        if (!knowledgeBase[originalQuestion][answer]) {
-          knowledgeBase[originalQuestion][answer] = { count: 1, rating: 0 };
-        } else {
-          knowledgeBase[originalQuestion][answer].count++;
-        }
-
-        saveKnowledgeBase();
-
-        inputField.value = '';
-        inputField.removeEventListener('keydown', enterHandler);
-        button.disabled = false;
-        button.onclick = sendMessage;
-      };
-
-      const enterHandler = (e) => {
-        if (e.key === 'Enter') handler();
-      };
-
-      inputField.addEventListener('keydown', enterHandler);
-      button.onclick = handler;
-    }
-
-    function displayMessage(sender, text) {
-  const chatBox = document.getElementById('chat-box');
-  const msg = document.createElement('div');
-  msg.className = 'message';
-
-  const span = document.createElement('span');
-  span.className = sender === 'Du' ? 'user' : 'ai';
-  span.textContent = sender + ": ";  // Füge den Sendernamen hinzu
-
-  msg.appendChild(span);
-  msg.appendChild(document.createTextNode(text));
-
-  chatBox.appendChild(msg);
-  chatBox.scrollTop = chatBox.scrollHeight; // Scrollen nach unten
-}
-
-
-    function displayRatingButtons(messageElement, answer, question) {
-      const buttonsDiv = document.createElement('div');
-      buttonsDiv.className = 'rating-buttons';
-
-      const thumbsUp = document.createElement('button');
-      thumbsUp.textContent = "👍";
-      thumbsUp.onclick = () => rateAnswer(question, answer, 1);
-
-      const thumbsDown = document.createElement('button');
-      thumbsDown.textContent = "👎";
-      thumbsDown.onclick = () => rateAnswer(question, answer, -1);
-
-      buttonsDiv.appendChild(thumbsUp);
-      buttonsDiv.appendChild(thumbsDown);
-
-      messageElement.appendChild(buttonsDiv);
-    }
-
-    function rateAnswer(question, answer, rating) {
-      if (!knowledgeBase[question]) {
-        knowledgeBase[question] = {};
-      }
-
-      if (!knowledgeBase[question][answer]) {
-        knowledgeBase[question][answer] = { count: 1, rating: rating };
-      } else {
-        knowledgeBase[question][answer].count++;
-        knowledgeBase[question][answer].rating += rating;
+        knowledgeBase[originalQuestion][answer].count++;
       }
 
       saveKnowledgeBase();
-    }
-  </script>
-  
+      fuse.setCollection(Object.keys(knowledgeBase).map(q => ({ question: q })));
 
+      inputField.value = '';
+      inputField.removeEventListener('keydown', enterHandler);
+      button.disabled = false;
+      button.onclick = sendMessage;
+    };
 
-  
-<hr>
-<h2 class="text">Admin-Bereich</h2>
-<input type="password" id="admin-code" placeholder="Admin-Code eingeben">
-<button onclick="verifyCode()" id="login-btn">Login</button>
+    const enterHandler = (e) => {
+      if (e.key === 'Enter') handler();
+    };
 
-<div id="admin-panel" style="display:none; background:white; padding:10px; margin-top:10px;">
-  <h3>Wissensbasis bearbeiten</h3>
-  <div id="knowledge-list"></div>
+    inputField.addEventListener('keydown', enterHandler);
+    button.onclick = handler;
+  }
+</script>
 
-  <h4>Neue Frage hinzufügen</h4>
-  <input type="text" id="new-question" placeholder="Frage">
-  <input type="text" id="new-answer" placeholder="Antwort">
-  <button onclick="addKnowledge()">Hinzufügen</button>
-</div>
-</body>
-</html>
 
 
