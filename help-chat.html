@@ -81,6 +81,62 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
   <script>
+    // Hier definierst du deine Wissensbasis und das Standardwissen
+let knowledgeBase = {};
+const defaultKnowledge = {
+  "what is your name": "I am Hoppernet AI, your assistant.",
+  "what can you do": "I can answer questions, store information, and learn from your inputs.",
+  "how are you": "I'm doing well, thank you for asking! How can I assist you today?",
+  "who created you": "I was created by Hoppernet developers."
+};
+
+// Lade das Wissen und kombiniere es mit Standardwissen
+async function loadKnowledgeBase() {
+  try {
+    const res = await fetch('/.netlify/functions/knowledge');
+    if (res.ok) {
+      knowledgeBase = await res.json();
+      knowledgeBase = { ...defaultKnowledge, ...knowledgeBase }; // Mische das Standardwissen mit dem geladenen Wissen
+    } else {
+      console.error("Fehler beim Laden:", res.status);
+      knowledgeBase = { ...defaultKnowledge }; // Falls kein Wissen vom Server kommt, nehme nur das Standardwissen
+    }
+  } catch (err) {
+    console.error("Verbindung fehlgeschlagen:", err);
+    knowledgeBase = { ...defaultKnowledge }; // Bei Fehlern auf das Standardwissen zurückgreifen
+  }
+}
+
+// Diese Funktion verwendet Fuse.js für eine unscharfe Suche
+function sendMessage() {
+  const inputField = document.getElementById('user-input');
+  const question = inputField.value.trim().toLowerCase();
+  if (!question) return;
+
+  displayMessage("Du", question);
+
+  // Fuse.js für unscharfe Suche
+  const fuse = new Fuse(Object.keys(knowledgeBase), {
+    includeScore: true,   // Zeigt die Relevanz der Übereinstimmung
+    threshold: 0.3,       // Eine niedrige Zahl bedeutet eine genauere Übereinstimmung (0.0 = perfekt)
+    distance: 100,        // Maximale Entfernung für unscharfe Übereinstimmungen
+  });
+
+  // Suche nach der besten Übereinstimmung
+  const result = fuse.search(question);
+
+  // Wenn eine Übereinstimmung gefunden wird, zeige die Antwort an
+  if (result.length > 0) {
+    const bestMatch = result[0].item; // Beste Übereinstimmung
+    displayMessage("AI", knowledgeBase[bestMatch], question);
+  } else {
+    displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
+    waitForAnswer(question);
+  }
+
+  inputField.value = '';
+}
+
     let knowledgeBase = {};
     const defaultKnowledge = {
       "what is your name": "I am Hoppernet AI, your assistant.",
