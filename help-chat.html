@@ -50,13 +50,25 @@
   <button onclick="sendMessage()">Send</button>
 
   <script>
-    // Wissensbasis (kann beliebig erweitert werden)
-    const knowledgeBase = {
-      "was ist dein name": "Ich bin deine Chat-AI!",
-      "was ist javascript": "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.",
-      "wie funktioniert dein programm": "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe eine passende Antwort zurück.",
-      "was kannst du": "Ich kann Fragen beantworten, für die ich Informationen habe!"
-    };
+    // 1. Standardwissen festlegen
+const defaultKnowledge = {
+  "was ist dein name": { "Ich bin deine Chat-AI!": 1 },
+  "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": 1 },
+  "wie funktioniert dein programm": { "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe die häufigste Antwort zurück.": 1 },
+  "was kannst du": { "Ich kann Fragen beantworten und neue Antworten lernen!": 1 }
+};
+
+// 2. Wissen laden ODER Standard übernehmen
+let knowledgeBase;
+const saved = localStorage.getItem('knowledgeBase');
+
+if (saved) {
+  knowledgeBase = JSON.parse(saved);
+} else {
+  knowledgeBase = defaultKnowledge;
+  localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
+}
+
 
     function sendMessage() {
       const inputField = document.getElementById('user-input');
