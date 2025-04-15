@@ -1,4 +1,87 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hoppernet-Help-Chat</title>
+  <style>
+   
+  .message {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+  }
+
+  .user {
+    font-weight: bold;
+    color: blue;
+  }
+
+  .ai {
+    font-weight: bold;
+    color: green;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .rating-buttons {
+    font-size: 12px;
+    margin-left: 10px;
+    display: flex;
+    gap: 5px;
+  }
+
+  .rating-buttons button {
+    padding: 3px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .rating-buttons button:hover {
+    background-color: #ddd;
+  }
+
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+    }
+    #chat-box {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .button {
+      margin-top: 5px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .text {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="text">Hoppernet Help-Chat</h1>
+  <h3 class="text">Here you can chat with our developers or ChatAIif you hava some questions</h3>
+
+  <h1>Deine lernende Chat-AI</h1>
+  <div id="chat-box"></div>
+
+  <input type="text" id="user-input" placeholder="Stell eine Frage..." />
+  <button onclick="sendMessage()">Send</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
 <script>
   const defaultKnowledge = {
     "was ist dein name": { "Ich bin deine Chat-AI!": { count: 1, rating: 0 } },
@@ -136,6 +219,11 @@
     button.onclick = handler;
   }
 </script>
+
+  
+
+</body>
+</html>
 
 
 
