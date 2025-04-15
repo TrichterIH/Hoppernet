@@ -101,8 +101,23 @@
   <button onclick="sendMessage()">Senden</button>
 
   <script>
-    // Lade die Wissensbasis aus localStorage oder starte leer
-    let knowledgeBase = JSON.parse(localStorage.getItem('knowledgeBase')) || {};
+    // Dein festes Standardwissen
+const defaultKnowledge = {
+  "was ist dein name": { "Ich bin deine Chat-AI!": 1 },
+  "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": 1 },
+  "wie funktioniert dein programm": { "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe die häufigste Antwort zurück.": 1 },
+  "was kannst du": { "Ich kann Fragen beantworten und neue Antworten lernen!": 1 }
+};
+
+// Lade Wissen aus dem localStorage
+let knowledgeBase = JSON.parse(localStorage.getItem('knowledgeBase'));
+
+// Wenn nichts gespeichert wurde: Standardwissen verwenden
+if (!knowledgeBase) {
+  knowledgeBase = defaultKnowledge;
+  localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
+}
+
 
     function saveKnowledgeBase() {
       localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
