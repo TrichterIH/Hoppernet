@@ -114,27 +114,27 @@ if (saved) {
 
   <script>
     // Dein festes Standardwissen
-const defaultKnowledge = {
-  "was ist dein name": { "Ich bin deine Chat-AI!": 1 },
-  "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": 1 },
-  "wie funktioniert dein programm": { "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe die häufigste Antwort zurück.": 1 },
-  "was kannst du": { "Ich kann Fragen beantworten und neue Antworten lernen!": 1 }
-};
+    const defaultKnowledge = {
+      "was ist dein name": { "Ich bin deine Chat-AI!": 1 },
+      "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": 1 },
+      "wie funktioniert dein programm": { "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe die häufigste Antwort zurück.": 1 },
+      "was kannst du": { "Ich kann Fragen beantworten und neue Antworten lernen!": 1 }
+    };
 
-// Lade Wissen aus dem localStorage
-let knowledgeBase = JSON.parse(localStorage.getItem('knowledgeBase'));
+    // Lade Wissen aus dem localStorage oder verwende Standardwissen
+    let knowledgeBase = JSON.parse(localStorage.getItem('knowledgeBase'));
 
-// Wenn nichts gespeichert wurde: Standardwissen verwenden
-if (!knowledgeBase) {
-  knowledgeBase = defaultKnowledge;
-  localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
-}
+    if (!knowledgeBase) {
+      knowledgeBase = defaultKnowledge;
+      localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
+    }
 
-
+    // Funktion, um das Wissen im localStorage zu speichern
     function saveKnowledgeBase() {
       localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
     }
 
+    // Funktion, um Nachrichten zu senden
     function sendMessage() {
       const inputField = document.getElementById('user-input');
       const question = inputField.value.trim().toLowerCase();
@@ -154,6 +154,7 @@ if (!knowledgeBase) {
       inputField.value = '';
     }
 
+    // Funktion, um die Antwort des Nutzers zu speichern und zu lernen
     function waitForAnswer(originalQuestion) {
       const inputField = document.getElementById('user-input');
       const button = document.querySelector('button');
@@ -193,6 +194,7 @@ if (!knowledgeBase) {
       button.onclick = handler;
     }
 
+    // Funktion, um Nachrichten im Chat anzuzeigen
     function displayMessage(sender, text) {
       const chatBox = document.getElementById('chat-box');
       const msg = document.createElement('div');
