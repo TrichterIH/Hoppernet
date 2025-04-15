@@ -5,42 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hoppernet-Help-Chat</title>
   <style>
-    .message {
-      margin-bottom: 10px;
-      padding-bottom: 5px;
-    }
+   
+  .message {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+  }
 
-    .user {
-      font-weight: bold;
-      color: blue;
-    }
+  .user {
+    font-weight: bold;
+    color: blue;
+  }
 
-    .ai {
-      font-weight: bold;
-      color: green;
-      display: block;
-      margin-bottom: 2px;
-    }
+  .ai {
+    font-weight: bold;
+    color: green;
+    display: block;
+    margin-bottom: 2px;
+  }
 
-    .rating-buttons {
-      font-size: 12px;
-      margin-left: 10px;
-      display: flex;
-      gap: 5px;
-    }
+  .rating-buttons {
+    font-size: 12px;
+    margin-left: 10px;
+    display: flex;
+    gap: 5px;
+  }
 
-    .rating-buttons button {
-      padding: 3px 6px;
-      font-size: 12px;
-      cursor: pointer;
-      background-color: #eee;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
+  .rating-buttons button {
+    padding: 3px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
 
-    .rating-buttons button:hover {
-      background-color: #ddd;
-    }
+  .rating-buttons button:hover {
+    background-color: #ddd;
+  }
+
 
     body {
       margin: 0;
@@ -71,7 +73,7 @@
 </head>
 <body>
   <h1 class="text">Hoppernet Help-Chat</h1>
-  <h3 class="text">Here you can chat with our developers or ChatAI if you have some questions</h3>
+  <h3 class="text">Here you can chat with our developers or ChatAIif you hava some questions</h3>
 
   <h1>Deine lernende Chat-AI</h1>
   <div id="chat-box"></div>
@@ -80,87 +82,74 @@
   <button onclick="sendMessage()">Send</button>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
-  <script>
-    // Hier definierst du deine Wissensbasis und das Standardwissen
-let knowledgeBase = {};
-const defaultKnowledge = {
-  "what is your name": "I am Hoppernet AI, your assistant.",
-  "what can you do": "I can answer questions, store information, and learn from your inputs.",
-  "how are you": "I'm doing well, thank you for asking! How can I assist you today?",
-  "who created you": "I was created by Hoppernet developers."
-};
+  <!-- Füge das Firebase SDK in deinem HTML hinzu -->
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
 
-// Lade das Wissen und kombiniere es mit Standardwissen
-async function loadKnowledgeBase() {
-  try {
-    const res = await fetch('/.netlify/functions/knowledge');
-    if (res.ok) {
-      knowledgeBase = await res.json();
-      knowledgeBase = { ...defaultKnowledge, ...knowledgeBase }; // Mische das Standardwissen mit dem geladenen Wissen
-    } else {
-      console.error("Fehler beim Laden:", res.status);
-      knowledgeBase = { ...defaultKnowledge }; // Falls kein Wissen vom Server kommt, nehme nur das Standardwissen
-    }
-  } catch (err) {
-    console.error("Verbindung fehlgeschlagen:", err);
-    knowledgeBase = { ...defaultKnowledge }; // Bei Fehlern auf das Standardwissen zurückgreifen
-  }
-}
+<script>
+  // Deine Firebase-Konfiguration (Ersetze diese mit deiner eigenen Firebase-Konfiguration)
+  const firebaseConfig = {
+    apiKey: "DEIN_API_KEY",
+    authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
+    projectId: "DEIN_PROJECT_ID",
+    storageBucket: "DEIN_PROJECT_ID.appspot.com",
+    messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
+    appId: "DEIN_APP_ID"
+  };
 
-// Diese Funktion verwendet Fuse.js für eine unscharfe Suche
-function sendMessage() {
-  const inputField = document.getElementById('user-input');
-  const question = inputField.value.trim().toLowerCase();
-  if (!question) return;
+  // Firebase-App initialisieren
+  const app = firebase.initializeApp(firebaseConfig);
 
-  displayMessage("Du", question);
+  // Firestore initialisieren
+  const db = firebase.firestore(app);
 
-  // Fuse.js für unscharfe Suche
-  const fuse = new Fuse(Object.keys(knowledgeBase), {
-    includeScore: true,   // Zeigt die Relevanz der Übereinstimmung
-    threshold: 0.3,       // Eine niedrige Zahl bedeutet eine genauere Übereinstimmung (0.0 = perfekt)
-    distance: 100,        // Maximale Entfernung für unscharfe Übereinstimmungen
-  });
-
-  // Suche nach der besten Übereinstimmung
-  const result = fuse.search(question);
-
-  // Wenn eine Übereinstimmung gefunden wird, zeige die Antwort an
-  if (result.length > 0) {
-    const bestMatch = result[0].item; // Beste Übereinstimmung
-    displayMessage("AI", knowledgeBase[bestMatch], question);
-  } else {
-    displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
-    waitForAnswer(question);
+  // Beispiel: Speichern von Daten
+  function saveAnswer(question, answer) {
+    db.collection("answers").add({
+      question: question,
+      answer: answer,
+      timestamp: new Date()
+    })
+    .then(() => {
+      console.log("Antwort erfolgreich gespeichert");
+    })
+    .catch((error) => {
+      console.error("Fehler beim Speichern der Antwort: ", error);
+    });
   }
 
-  inputField.value = '';
-}
+  // Beispiel: Abrufen von Daten
+  function getAnswer(question) {
+    db.collection("answers").where("question", "==", question).get()
+      .then((querySnapshot) => {
+        if (querySnapshot.empty) {
+          console.log("Keine Antwort gefunden");
+        } else {
+          querySnapshot.forEach((doc) => {
+            console.log("Antwort: ", doc.data().answer);
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Fehler beim Abrufen der Antwort: ", error);
+      });
+  }
+</script>
 
+<script>
     let knowledgeBase = {};
-    const defaultKnowledge = {
-      "what is your name": "I am Hoppernet AI, your assistant.",
-      "what can you do": "I can answer questions, store information, and learn from your inputs.",
-      "how are you": "I'm doing well, thank you for asking! How can I assist you today?",
-      "who created you": "I was created by Hoppernet developers."
-    };
 
-    // 1. Wissen vom Server laden und mit Standardwissen kombinieren
+    // 1. Wissen vom Server laden
     async function loadKnowledgeBase() {
       try {
         const res = await fetch('/.netlify/functions/knowledge');
         if (res.ok) {
           knowledgeBase = await res.json();
-          // Füge das Standardwissen hinzu
-          knowledgeBase = { ...defaultKnowledge, ...knowledgeBase };
-          console.log("Wissen erfolgreich geladen:", knowledgeBase); // Zeigt das geladene Wissen an
         } else {
           console.error("Fehler beim Laden:", res.status);
-          knowledgeBase = { ...defaultKnowledge }; // Falls der Server nicht erreichbar ist, nur Standardwissen verwenden
         }
       } catch (err) {
         console.error("Verbindung fehlgeschlagen:", err);
-        knowledgeBase = { ...defaultKnowledge }; // Falls der Server nicht erreichbar ist, nur Standardwissen verwenden
       }
     }
 
@@ -177,22 +166,16 @@ function sendMessage() {
     loadKnowledgeBase();
 
     function sendMessage() {
-      const inputField = document.getElementById('user-input');
-      const question = inputField.value.trim().toLowerCase();
-      if (!question) return;
+  const inputField = document.getElementById('user-input');
+  const question = inputField.value.trim().toLowerCase();
+  if (!question) return;
 
-      displayMessage("Du", question);
+  displayMessage("Du", question);
 
-      // Überprüfen, ob die Frage im Wissen vorhanden ist
-      if (knowledgeBase[question]) {
-        displayMessage("AI", knowledgeBase[question], question);
-      } else {
-        displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
-        waitForAnswer(question);
-      }
+  // Abrufen der Antwort aus der Firebase Firestore-Datenbank
+  getAnswer(question); 
+}
 
-      inputField.value = '';
-    }
 
     function waitForAnswer(originalQuestion) {
       const inputField = document.getElementById('user-input');
@@ -240,10 +223,10 @@ function sendMessage() {
 
       const span = document.createElement('span');
       span.className = sender === 'Du' ? 'user' : 'ai';
-      span.textContent = `${sender}:`;
+      span.textContent = ${sender}:;
 
       msg.appendChild(span);
-      msg.appendChild(document.createTextNode(` ${text}`));
+      msg.appendChild(document.createTextNode( ${text}));
 
       chatBox.appendChild(msg);
 
@@ -288,74 +271,75 @@ function sendMessage() {
     }
   </script>
   
-  <!-- Füge das Firebase SDK in deinem HTML hinzu -->
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+<!-- Füge das Firebase SDK in deinem HTML hinzu -->
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
 
-  <script>
-    // Deine Firebase-Konfiguration (Ersetze diese mit deiner eigenen Firebase-Konfiguration)
-    const firebaseConfig = {
-      apiKey: "DEIN_API_KEY",
-      authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
-      projectId: "DEIN_PROJECT_ID",
-      storageBucket: "DEIN_PROJECT_ID.appspot.com",
-      messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
-      appId: "DEIN_APP_ID"
-    };
+<script>
+  // Deine Firebase-Konfiguration (Ersetze diese mit deiner eigenen Firebase-Konfiguration)
+  const firebaseConfig = {
+    apiKey: "DEIN_API_KEY",
+    authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
+    projectId: "DEIN_PROJECT_ID",
+    storageBucket: "DEIN_PROJECT_ID.appspot.com",
+    messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
+    appId: "DEIN_APP_ID"
+  };
 
-    // Firebase-App initialisieren
-    const app = firebase.initializeApp(firebaseConfig);
+  // Firebase-App initialisieren
+  const app = firebase.initializeApp(firebaseConfig);
 
-    // Firestore initialisieren
-    const db = firebase.firestore(app);
+  // Firestore initialisieren
+  const db = firebase.firestore(app);
 
-    // Beispiel: Speichern von Daten
-    function saveAnswer(question, answer) {
-      db.collection("answers").add({
-        question: question,
-        answer: answer,
-        timestamp: new Date()
-      })
-      .then(() => {
-        console.log("Antwort erfolgreich gespeichert");
+  // Beispiel: Speichern von Daten
+  function saveAnswer(question, answer) {
+    db.collection("answers").add({
+      question: question,
+      answer: answer,
+      timestamp: new Date()
+    })
+    .then(() => {
+      console.log("Antwort erfolgreich gespeichert");
+    })
+    .catch((error) => {
+      console.error("Fehler beim Speichern der Antwort: ", error);
+    });
+  }
+
+  // Beispiel: Abrufen von Daten
+  function getAnswer(question) {
+    db.collection("answers").where("question", "==", question).get()
+      .then((querySnapshot) => {
+        if (querySnapshot.empty) {
+          console.log("Keine Antwort gefunden");
+        } else {
+          querySnapshot.forEach((doc) => {
+            console.log("Antwort: ", doc.data().answer);
+          });
+        }
       })
       .catch((error) => {
-        console.error("Fehler beim Speichern der Antwort: ", error);
+        console.error("Fehler beim Abrufen der Antwort: ", error);
       });
-    }
+  }
+</script>
 
-    // Beispiel: Abrufen von Daten
-    function getAnswer(question) {
-      db.collection("answers").where("question", "==", question).get()
-        .then((querySnapshot) => {
-          if (querySnapshot.empty) {
-            console.log("Keine Antwort gefunden");
-          } else {
-            querySnapshot.forEach((doc) => {
-              console.log("Antwort: ", doc.data().answer);
-            });
-          }
-        })
-        .catch((error) => {
-          console.error("Fehler beim Abrufen der Antwort: ", error);
-        });
-    }
-  </script>
+  
+<hr>
+<h2 class="text">Admin-Bereich</h2>
+<input type="password" id="admin-code" placeholder="Admin-Code eingeben">
+<button onclick="verifyCode()" id="login-btn">Login</button>
 
-  <hr>
-  <h2 class="text">Admin-Bereich</h2>
-  <input type="password" id="admin-code" placeholder="Admin-Code eingeben">
-  <button onclick="verifyCode()" id="login-btn">Login</button>
+<div id="admin-panel" style="display:none; background:white; padding:10px; margin-top:10px;">
+  <h3>Wissensbasis bearbeiten</h3>
+  <div id="knowledge-list"></div>
 
-  <div id="admin-panel" style="display:none; background:white; padding:10px; margin-top:10px;">
-    <h3>Wissensbasis bearbeiten</h3>
-    <div id="knowledge-list"></div>
-
-    <h4>Neue Frage hinzufügen</h4>
-    <input type="text" id="new-question" placeholder="Frage">
-    <input type="text" id="new-answer" placeholder="Antwort">
-    <button onclick="addKnowledge()">Hinzufügen</button>
-  </div>
+  <h4>Neue Frage hinzufügen</h4>
+  <input type="text" id="new-question" placeholder="Frage">
+  <input type="text" id="new-answer" placeholder="Antwort">
+  <button onclick="addKnowledge()">Hinzufügen</button>
+</div>
 </body>
 </html>
 
