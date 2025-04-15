@@ -5,6 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hoppernet-Help-Chat</title>
   <style>
+   
+  .message {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+  }
+
+  .user {
+    font-weight: bold;
+    color: blue;
+  }
+
+  .ai {
+    font-weight: bold;
+    color: green;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .rating-buttons {
+    font-size: 12px;
+    margin-left: 10px;
+    display: flex;
+    gap: 5px;
+  }
+
+  .rating-buttons button {
+    padding: 3px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .rating-buttons button:hover {
+    background-color: #ddd;
+  }
+
+
     body {
       margin: 0;
       padding: 0;
@@ -18,17 +57,6 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       margin-bottom: 20px;
-    }
-    .message {
-      margin-bottom: 10px;
-    }
-    .user {
-      font-weight: bold;
-      color: blue;
-    }
-    .ai {
-      font-weight: bold;
-      color: green;
     }
     .button {
       margin-top: 5px;
@@ -81,44 +109,45 @@
       const question = inputField.value.trim().toLowerCase();
       if (!question) return;
 
-      displayMessage("Du", question);
+      function displayMessage(sender, text, question = null) {
+  const chatBox = document.getElementById('chat-box');
+  const msg = document.createElement('div');
+  msg.className = 'message';
 
-      // Nutze fuse.js für die Fuzzy-Suche nach der besten Übereinstimmung
-      const fuse = new Fuse(Object.keys(knowledgeBase), fuseOptions);
-      const results = fuse.search(question);
+  const span = document.createElement('span');
+  span.className = sender === 'Du' ? 'user' : 'ai';
+  span.textContent = `${sender}:`;
 
-      if (results.length > 0) {
-        const bestMatch = results[0].item;
-        const answers = knowledgeBase[bestMatch];
-        const mostUsed = Object.entries(answers).sort((a, b) => b[1] - a[1])[0][0];
-        displayMessage("AI", mostUsed);
-        displayRatingButtons(mostUsed, bestMatch); // Bewertungsbuttons anzeigen
-      } else {
-        displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
-        waitForAnswer(question);
-      }
+  msg.appendChild(span);
+  msg.appendChild(document.createTextNode(` ${text}`));
 
-      inputField.value = '';
-    }
+  chatBox.appendChild(msg);
 
-    function displayRatingButtons(answer, question) {
-      const chatBox = document.getElementById('chat-box');
-      const messageDiv = chatBox.querySelectorAll('.ai:last-child')[0];
-      const buttonsDiv = document.createElement('div');
-      buttonsDiv.className = 'buttons';
+  if (sender === "AI" && question) {
+    displayRatingButtons(msg, text, question);
+  }
 
-      const thumbsUp = document.createElement('button');
-      thumbsUp.innerText = "👍 Daumen hoch";
-      thumbsUp.onclick = () => rateAnswer(question, answer, 1);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-      const thumbsDown = document.createElement('button');
-      thumbsDown.innerText = "👎 Daumen runter";
-      thumbsDown.onclick = () => rateAnswer(question, answer, -1);
+function displayRatingButtons(messageElement, answer, question) {
+  const buttonsDiv = document.createElement('div');
+  buttonsDiv.className = 'rating-buttons';
 
-      buttonsDiv.appendChild(thumbsUp);
-      buttonsDiv.appendChild(thumbsDown);
-      messageDiv.appendChild(buttonsDiv);
-    }
+  const thumbsUp = document.createElement('button');
+  thumbsUp.textContent = "👍";
+  thumbsUp.onclick = () => rateAnswer(question, answer, 1);
+
+  const thumbsDown = document.createElement('button');
+  thumbsDown.textContent = "👎";
+  thumbsDown.onclick = () => rateAnswer(question, answer, -1);
+
+  buttonsDiv.appendChild(thumbsUp);
+  buttonsDiv.appendChild(thumbsDown);
+
+  messageElement.appendChild(buttonsDiv);
+}
+
 
     function rateAnswer(question, answer, rating) {
       if (!knowledgeBase[question]) {
