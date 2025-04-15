@@ -164,22 +164,25 @@
     messageElement.appendChild(buttonsDiv);
   }
 
-  function rateAnswer(question, answer, rating) {
-    if (!knowledgeBase[question]) {
-      knowledgeBase[question] = {};
-    }
+  const contextKey = lastQuestion ? `${lastQuestion} ${originalQuestion}` : originalQuestion;
 
-    if (!knowledgeBase[question][answer]) {
-      knowledgeBase[question][answer] = { count: 1, rating: rating };
-    } else {
-      knowledgeBase[question][answer].count++;
-      knowledgeBase[question][answer].rating += rating;
-    }
+if (!knowledgeBase[contextKey]) {
+  knowledgeBase[contextKey] = {};
+}
+
+if (!knowledgeBase[contextKey][answer]) {
+  knowledgeBase[contextKey][answer] = { count: 1, rating: 0 };
+} else {
+  knowledgeBase[contextKey][answer].count++;
+}
+
 
     saveKnowledgeBase();
   }
 
   function waitForAnswer(originalQuestion) {
+    lastQuestion = originalQuestion;
+
     const inputField = document.getElementById('user-input');
     const button = document.querySelector('button');
 
