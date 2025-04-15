@@ -170,11 +170,13 @@
   const question = inputField.value.trim().toLowerCase();
   if (!question) return;
 
+  // Zeige die Benutzeranfrage
   displayMessage("Du", question);
 
-  // Abrufen der Antwort aus der Firebase Firestore-Datenbank
-  getAnswer(question); 
+  // Abrufe und zeige die Antwort der AI
+  getAnswer(question);
 }
+
 
 
     function waitForAnswer(originalQuestion) {
@@ -216,26 +218,22 @@
       button.onclick = handler;
     }
 
-    function displayMessage(sender, text, question = null) {
-      const chatBox = document.getElementById('chat-box');
-      const msg = document.createElement('div');
-      msg.className = 'message';
+    function displayMessage(sender, text) {
+  const chatBox = document.getElementById('chat-box');
+  const msg = document.createElement('div');
+  msg.className = 'message';
 
-      const span = document.createElement('span');
-      span.className = sender === 'Du' ? 'user' : 'ai';
-      span.textContent = ${sender}:;
+  const span = document.createElement('span');
+  span.className = sender === 'Du' ? 'user' : 'ai';
+  span.textContent = sender + ": ";  // Füge den Sendernamen hinzu
 
-      msg.appendChild(span);
-      msg.appendChild(document.createTextNode( ${text}));
+  msg.appendChild(span);
+  msg.appendChild(document.createTextNode(text));
 
-      chatBox.appendChild(msg);
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight; // Scrollen nach unten
+}
 
-      if (sender === "AI" && question) {
-        displayRatingButtons(msg, text, question);
-      }
-
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
 
     function displayRatingButtons(messageElement, answer, question) {
       const buttonsDiv = document.createElement('div');
@@ -271,59 +269,7 @@
     }
   </script>
   
-<!-- Füge das Firebase SDK in deinem HTML hinzu -->
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
 
-<script>
-  // Deine Firebase-Konfiguration (Ersetze diese mit deiner eigenen Firebase-Konfiguration)
-  const firebaseConfig = {
-    apiKey: "DEIN_API_KEY",
-    authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
-    projectId: "DEIN_PROJECT_ID",
-    storageBucket: "DEIN_PROJECT_ID.appspot.com",
-    messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
-    appId: "DEIN_APP_ID"
-  };
-
-  // Firebase-App initialisieren
-  const app = firebase.initializeApp(firebaseConfig);
-
-  // Firestore initialisieren
-  const db = firebase.firestore(app);
-
-  // Beispiel: Speichern von Daten
-  function saveAnswer(question, answer) {
-    db.collection("answers").add({
-      question: question,
-      answer: answer,
-      timestamp: new Date()
-    })
-    .then(() => {
-      console.log("Antwort erfolgreich gespeichert");
-    })
-    .catch((error) => {
-      console.error("Fehler beim Speichern der Antwort: ", error);
-    });
-  }
-
-  // Beispiel: Abrufen von Daten
-  function getAnswer(question) {
-    db.collection("answers").where("question", "==", question).get()
-      .then((querySnapshot) => {
-        if (querySnapshot.empty) {
-          console.log("Keine Antwort gefunden");
-        } else {
-          querySnapshot.forEach((doc) => {
-            console.log("Antwort: ", doc.data().answer);
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Fehler beim Abrufen der Antwort: ", error);
-      });
-  }
-</script>
 
   
 <hr>
