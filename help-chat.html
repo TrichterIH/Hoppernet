@@ -83,6 +83,9 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
 <script>
+  // Globale Variable für den Kontext
+  let lastQuestion = null;
+
   const defaultKnowledge = {
     "was ist dein name": { "Ich bin deine Chat-AI!": { count: 1, rating: 0 } },
     "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": { count: 1, rating: 0 } },
@@ -125,6 +128,52 @@
     inputField.value = '';
   }
 
+  function waitForAnswer(originalQuestion) {
+    // Setze den aktuellen Kontext
+    lastQuestion = originalQuestion;
+
+    const inputField = document.getElementById('user-input');
+    const button = document.querySelector('button');
+
+    button.disabled = true;
+
+    const handler = () => {
+      const answer = inputField.value.trim();
+      if (!answer) return;
+
+      displayMessage("Du", answer);
+      displayMessage("AI", "Danke! Ich habe das gelernt.");
+
+      // Erstelle einen Kontextschlüssel, der die letzte Frage (Kontext) und die aktuelle Frage kombiniert
+      const contextKey = lastQuestion ? `${lastQuestion} ${originalQuestion}` : originalQuestion;
+
+      // Lerne die Antwort unter dem Kontextschlüssel
+      if (!knowledgeBase[contextKey]) {
+        knowledgeBase[contextKey] = {};
+      }
+      if (!knowledgeBase[contextKey][answer]) {
+        knowledgeBase[contextKey][answer] = { count: 1, rating: 0 };
+      } else {
+        knowledgeBase[contextKey][answer].count++;
+      }
+
+      saveKnowledgeBase();
+      fuse.setCollection(Object.keys(knowledgeBase).map(q => ({ question: q })));
+
+      inputField.value = '';
+      inputField.removeEventListener('keydown', enterHandler);
+      button.disabled = false;
+      button.onclick = sendMessage;
+    };
+
+    const enterHandler = (e) => {
+      if (e.key === 'Enter') handler();
+    };
+
+    inputField.addEventListener('keydown', enterHandler);
+    button.onclick = handler;
+  }
+
   function displayMessage(sender, text, question = null) {
     const chatBox = document.getElementById('chat-box');
     const msg = document.createElement('div');
@@ -132,10 +181,10 @@
 
     const span = document.createElement('span');
     span.className = sender === 'Du' ? 'user' : 'ai';
-    span.textContent = `${sender}:`;
+    span.textContent = sender + ": ";
 
     msg.appendChild(span);
-    msg.appendChild(document.createTextNode(` ${text}`));
+    msg.appendChild(document.createTextNode(text));
 
     chatBox.appendChild(msg);
 
@@ -164,21 +213,20 @@
     messageElement.appendChild(buttonsDiv);
   }
 
-  const contextKey = lastQuestion ? `${lastQuestion} ${originalQuestion}` : originalQuestion;
-
-if (!knowledgeBase[contextKey]) {
-  knowledgeBase[contextKey] = {};
-}
-
-if (!knowledgeBase[contextKey][answer]) {
-  knowledgeBase[contextKey][answer] = { count: 1, rating: 0 };
-} else {
-  knowledgeBase[contextKey][answer].count++;
-}
-
-
+  function rateAnswer(question, answer, rating) {
+    if (!knowledgeBase[question]) {
+      knowledgeBase[question] = {};
+    }
+    if (!knowledgeBase[question][answer]) {
+      knowledgeBase[question][answer] = { count: 1, rating: rating };
+    } else {
+      knowledgeBase[question][answer].count++;
+      knowledgeBase[question][answer].rating += rating;
+    }
     saveKnowledgeBase();
   }
+</script>
+
 
   function waitForAnswer(originalQuestion) {
     lastQuestion = originalQuestion;
