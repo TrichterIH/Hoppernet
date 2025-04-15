@@ -9,22 +9,26 @@
       margin-bottom: 10px;
       padding-bottom: 5px;
     }
+
     .user {
       font-weight: bold;
       color: blue;
     }
+
     .ai {
       font-weight: bold;
       color: green;
       display: block;
       margin-bottom: 2px;
     }
+
     .rating-buttons {
       font-size: 12px;
       margin-left: 10px;
       display: flex;
       gap: 5px;
     }
+
     .rating-buttons button {
       padding: 3px 6px;
       font-size: 12px;
@@ -33,9 +37,11 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+
     .rating-buttons button:hover {
       background-color: #ddd;
     }
+
     body {
       margin: 0;
       padding: 0;
@@ -73,40 +79,32 @@
   <input type="text" id="user-input" placeholder="Stell eine Frage..." />
   <button onclick="sendMessage()">Send</button>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.min.js"></script>
   <script>
-    // Deine Firebase-Konfiguration (Ersetze diese mit deiner eigenen Firebase-Konfiguration)
-    const firebaseConfig = {
-      apiKey: "DEIN_API_KEY",
-      authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
-      projectId: "DEIN_PROJECT_ID",
-      storageBucket: "DEIN_PROJECT_ID.appspot.com",
-      messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
-      appId: "DEIN_APP_ID"
+    let knowledgeBase = {};
+    const defaultKnowledge = {
+      "what is your name": "I am Hoppernet AI, your assistant.",
+      "what can you do": "I can answer questions, store information, and learn from your inputs.",
+      "how are you": "I'm doing well, thank you for asking! How can I assist you today?",
+      "who created you": "I was created by Hoppernet developers."
     };
 
-    // Firebase-App initialisieren
-    const app = firebase.initializeApp(firebaseConfig);
-
-    // Firestore initialisieren
-    const db = firebase.firestore(app);
-
-    let knowledgeBase = {};
-
-    // 1. Wissen vom Server laden
+    // 1. Wissen vom Server laden und mit Standardwissen kombinieren
     async function loadKnowledgeBase() {
       try {
         const res = await fetch('/.netlify/functions/knowledge');
         if (res.ok) {
           knowledgeBase = await res.json();
+          // Füge das Standardwissen hinzu
+          knowledgeBase = { ...defaultKnowledge, ...knowledgeBase };
+          console.log("Wissen erfolgreich geladen:", knowledgeBase); // Zeigt das geladene Wissen an
         } else {
           console.error("Fehler beim Laden:", res.status);
+          knowledgeBase = { ...defaultKnowledge }; // Falls der Server nicht erreichbar ist, nur Standardwissen verwenden
         }
       } catch (err) {
         console.error("Verbindung fehlgeschlagen:", err);
+        knowledgeBase = { ...defaultKnowledge }; // Falls der Server nicht erreichbar ist, nur Standardwissen verwenden
       }
     }
 
@@ -122,24 +120,6 @@
     // Sofort Wissen laden beim Start
     loadKnowledgeBase();
 
-    // Funktion zum Abrufen von Daten aus Firestore
-    function getAnswerFromFirestore(question) {
-      return db.collection("answers").where("question", "==", question).get();
-    }
-
-    // Funktion zum Speichern von Antworten in Firestore
-    function saveAnswerToFirestore(question, answer) {
-      db.collection("answers").add({
-        question: question,
-        answer: answer,
-        timestamp: new Date()
-      }).then(() => {
-        console.log("Antwort erfolgreich gespeichert");
-      }).catch((error) => {
-        console.error("Fehler beim Speichern der Antwort: ", error);
-      });
-    }
-
     function sendMessage() {
       const inputField = document.getElementById('user-input');
       const question = inputField.value.trim().toLowerCase();
@@ -147,21 +127,13 @@
 
       displayMessage("Du", question);
 
-      // Abrufe die Antwort aus Firestore
-      getAnswerFromFirestore(question).then(querySnapshot => {
-        if (querySnapshot.empty) {
-          displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
-          waitForAnswer(question);
-        } else {
-          querySnapshot.forEach(doc => {
-            const answer = doc.data().answer;
-            displayMessage("AI", answer);
-          });
-        }
-      }).catch((error) => {
-        console.error("Fehler beim Abrufen der Antwort: ", error);
-        displayMessage("AI", "Entschuldigung, ich konnte die Antwort nicht finden.");
-      });
+      // Überprüfen, ob die Frage im Wissen vorhanden ist
+      if (knowledgeBase[question]) {
+        displayMessage("AI", knowledgeBase[question], question);
+      } else {
+        displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
+        waitForAnswer(question);
+      }
 
       inputField.value = '';
     }
@@ -179,10 +151,20 @@
         displayMessage("Du", answer);
         displayMessage("AI", "Danke! Ich habe das gelernt.");
 
-        // Speichern der Antwort in Firestore
-        saveAnswerToFirestore(originalQuestion, answer);
+        if (!knowledgeBase[originalQuestion]) {
+          knowledgeBase[originalQuestion] = {};
+        }
+
+        if (!knowledgeBase[originalQuestion][answer]) {
+          knowledgeBase[originalQuestion][answer] = { count: 1, rating: 0 };
+        } else {
+          knowledgeBase[originalQuestion][answer].count++;
+        }
+
+        saveKnowledgeBase();
 
         inputField.value = '';
+        inputField.removeEventListener('keydown', enterHandler);
         button.disabled = false;
         button.onclick = sendMessage;
       };
@@ -235,11 +217,75 @@
     }
 
     function rateAnswer(question, answer, rating) {
-      // Speichern der Bewertungen
-      saveAnswerToFirestore(question, answer);
+      if (!knowledgeBase[question]) {
+        knowledgeBase[question] = {};
+      }
+
+      if (!knowledgeBase[question][answer]) {
+        knowledgeBase[question][answer] = { count: 1, rating: rating };
+      } else {
+        knowledgeBase[question][answer].count++;
+        knowledgeBase[question][answer].rating += rating;
+      }
+
+      saveKnowledgeBase();
     }
   </script>
   
+  <!-- Füge das Firebase SDK in deinem HTML hinzu -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+
+  <script>
+    // Deine Firebase-Konfiguration (Ersetze diese mit deiner eigenen Firebase-Konfiguration)
+    const firebaseConfig = {
+      apiKey: "DEIN_API_KEY",
+      authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
+      projectId: "DEIN_PROJECT_ID",
+      storageBucket: "DEIN_PROJECT_ID.appspot.com",
+      messagingSenderId: "DEIN_MESSAGING_SENDER_ID",
+      appId: "DEIN_APP_ID"
+    };
+
+    // Firebase-App initialisieren
+    const app = firebase.initializeApp(firebaseConfig);
+
+    // Firestore initialisieren
+    const db = firebase.firestore(app);
+
+    // Beispiel: Speichern von Daten
+    function saveAnswer(question, answer) {
+      db.collection("answers").add({
+        question: question,
+        answer: answer,
+        timestamp: new Date()
+      })
+      .then(() => {
+        console.log("Antwort erfolgreich gespeichert");
+      })
+      .catch((error) => {
+        console.error("Fehler beim Speichern der Antwort: ", error);
+      });
+    }
+
+    // Beispiel: Abrufen von Daten
+    function getAnswer(question) {
+      db.collection("answers").where("question", "==", question).get()
+        .then((querySnapshot) => {
+          if (querySnapshot.empty) {
+            console.log("Keine Antwort gefunden");
+          } else {
+            querySnapshot.forEach((doc) => {
+              console.log("Antwort: ", doc.data().answer);
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Fehler beim Abrufen der Antwort: ", error);
+        });
+    }
+  </script>
+
   <hr>
   <h2 class="text">Admin-Bereich</h2>
   <input type="password" id="admin-code" placeholder="Admin-Code eingeben">
@@ -256,4 +302,5 @@
   </div>
 </body>
 </html>
+
 
