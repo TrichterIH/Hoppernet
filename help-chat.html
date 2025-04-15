@@ -10,6 +10,31 @@
       padding: 0;
       background-color: black;
     }
+    #chat-box {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .message {
+      margin-bottom: 10px;
+    }
+    .user {
+      font-weight: bold;
+      color: blue;
+    }
+    .ai {
+      font-weight: bold;
+      color: green;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
     .text {
       color: white;
     }
@@ -17,6 +42,48 @@
 </head>
 <body>
   <h1 class="text">Hoppernet Help-Chat</h1>
-  <h3 class="text">Here you can chat with our developers if you hava some questions</h3>
+  <h3 class="text">Here you can chat with our developers or ChatAIif you hava some questions</h3>
+  <h2>Hoppernet Chat-AI</h2>
+  <div id="chat-box"></div>
+
+  <input type="text" id="user-input" placeholder="What's your question?..."></input>
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    // Wissensbasis (kann beliebig erweitert werden)
+    const knowledgeBase = {
+      "was ist dein name": "Ich bin deine Chat-AI!",
+      "was ist javascript": "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.",
+      "wie funktioniert dein programm": "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe eine passende Antwort zurück.",
+      "was kannst du": "Ich kann Fragen beantworten, für die ich Informationen habe!"
+    };
+
+    function sendMessage() {
+      const inputField = document.getElementById('user-input');
+      const question = inputField.value.trim().toLowerCase();
+      if (!question) return;
+
+      displayMessage("Du", question);
+
+      if (knowledgeBase[question]) {
+        displayMessage("AI", knowledgeBase[question]);
+      } else {
+        displayMessage("AI", "Das weiß ich leider nicht. Möchtest du mir die Antwort beibringen?");
+        // Optional: du kannst hier einen Dialog einbauen, um neue Antworten zu lernen
+      }
+
+      inputField.value = '';
+    }
+
+    function displayMessage(sender, text) {
+      const chatBox = document.getElementById('chat-box');
+      const msg = document.createElement('div');
+      msg.className = 'message';
+      msg.innerHTML = `<span class="${sender === 'Du' ? 'user' : 'ai'}">${sender}:</span> ${text}`;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+
 </body>
 </html>
