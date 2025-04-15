@@ -30,6 +30,9 @@
       font-weight: bold;
       color: green;
     }
+    .button {
+      margin-top: 5px;
+    }
     input, button {
       padding: 10px;
       font-size: 16px;
@@ -89,12 +92,47 @@
         const answers = knowledgeBase[bestMatch];
         const mostUsed = Object.entries(answers).sort((a, b) => b[1] - a[1])[0][0];
         displayMessage("AI", mostUsed);
+        displayRatingButtons(mostUsed, bestMatch); // Bewertungsbuttons anzeigen
       } else {
         displayMessage("AI", "Das weiß ich leider nicht. Wie würdest du darauf antworten?");
         waitForAnswer(question);
       }
 
       inputField.value = '';
+    }
+
+    function displayRatingButtons(answer, question) {
+      const chatBox = document.getElementById('chat-box');
+      const messageDiv = chatBox.querySelectorAll('.ai:last-child')[0];
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.className = 'buttons';
+
+      const thumbsUp = document.createElement('button');
+      thumbsUp.innerText = "👍 Daumen hoch";
+      thumbsUp.onclick = () => rateAnswer(question, answer, 1);
+
+      const thumbsDown = document.createElement('button');
+      thumbsDown.innerText = "👎 Daumen runter";
+      thumbsDown.onclick = () => rateAnswer(question, answer, -1);
+
+      buttonsDiv.appendChild(thumbsUp);
+      buttonsDiv.appendChild(thumbsDown);
+      messageDiv.appendChild(buttonsDiv);
+    }
+
+    function rateAnswer(question, answer, rating) {
+      if (!knowledgeBase[question]) {
+        knowledgeBase[question] = {};
+      }
+
+      if (!knowledgeBase[question][answer]) {
+        knowledgeBase[question][answer] = { count: 1, rating: rating };
+      } else {
+        knowledgeBase[question][answer].count++;
+        knowledgeBase[question][answer].rating += rating;
+      }
+
+      saveKnowledgeBase();
     }
 
     function waitForAnswer(originalQuestion) {
@@ -115,9 +153,9 @@
         }
 
         if (!knowledgeBase[originalQuestion][answer]) {
-          knowledgeBase[originalQuestion][answer] = 1;
+          knowledgeBase[originalQuestion][answer] = { count: 1, rating: 0 };
         } else {
-          knowledgeBase[originalQuestion][answer]++;
+          knowledgeBase[originalQuestion][answer].count++;
         }
 
         saveKnowledgeBase();
