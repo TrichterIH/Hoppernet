@@ -104,36 +104,24 @@
   const db = firebase.firestore(app);
 
   // Beispiel: Speichern von Daten
-  function saveAnswer(question, answer) {
-    db.collection("answers").add({
-      question: question,
-      answer: answer,
-      timestamp: new Date()
-    })
-    .then(() => {
-      console.log("Antwort erfolgreich gespeichert");
+  function getAnswer(question) {
+  db.collection("answers").where("question", "==", question).get()
+    .then((querySnapshot) => {
+      if (querySnapshot.empty) {
+        console.log("Keine Antwort gefunden");
+        displayMessage("AI", "Entschuldigung, ich weiß nicht, wie ich darauf antworten kann.");
+      } else {
+        querySnapshot.forEach((doc) => {
+          console.log("Antwort: ", doc.data().answer);
+          displayMessage("AI", doc.data().answer);
+        });
+      }
     })
     .catch((error) => {
-      console.error("Fehler beim Speichern der Antwort: ", error);
+      console.error("Fehler beim Abrufen der Antwort: ", error);
     });
-  }
+}
 
-  // Beispiel: Abrufen von Daten
-  function getAnswer(question) {
-    db.collection("answers").where("question", "==", question).get()
-      .then((querySnapshot) => {
-        if (querySnapshot.empty) {
-          console.log("Keine Antwort gefunden");
-        } else {
-          querySnapshot.forEach((doc) => {
-            console.log("Antwort: ", doc.data().answer);
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Fehler beim Abrufen der Antwort: ", error);
-      });
-  }
 </script>
 
 <script>
