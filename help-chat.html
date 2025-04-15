@@ -49,54 +49,7 @@
   <input type="text" id="user-input" placeholder="What's your question?..."></input>
   <button onclick="sendMessage()">Send</button>
 
-  <script>
-    // 1. Standardwissen festlegen
-const defaultKnowledge = {
-  "was ist dein name": { "Ich bin deine Chat-AI!": 1 },
-  "was ist javascript": { "JavaScript ist eine Programmiersprache, die hauptsächlich für Webseiten verwendet wird.": 1 },
-  "wie funktioniert dein programm": { "Ich vergleiche deine Frage mit meiner Wissensbasis und gebe die häufigste Antwort zurück.": 1 },
-  "was kannst du": { "Ich kann Fragen beantworten und neue Antworten lernen!": 1 }
-};
-
-// 2. Wissen laden ODER Standard übernehmen
-let knowledgeBase;
-const saved = localStorage.getItem('knowledgeBase');
-
-if (saved) {
-  knowledgeBase = JSON.parse(saved);
-} else {
-  knowledgeBase = defaultKnowledge;
-  localStorage.setItem('knowledgeBase', JSON.stringify(knowledgeBase));
-}
-
-
-    function sendMessage() {
-      const inputField = document.getElementById('user-input');
-      const question = inputField.value.trim().toLowerCase();
-      if (!question) return;
-
-      displayMessage("Du", question);
-
-      if (knowledgeBase[question]) {
-        displayMessage("AI", knowledgeBase[question]);
-      } else {
-        displayMessage("AI", "Das weiß ich leider nicht. Möchtest du mir die Antwort beibringen?");
-        // Optional: du kannst hier einen Dialog einbauen, um neue Antworten zu lernen
-      }
-
-      inputField.value = '';
-    }
-
-    function displayMessage(sender, text) {
-      const chatBox = document.getElementById('chat-box');
-      const msg = document.createElement('div');
-      msg.className = 'message';
-      msg.innerHTML = `<span class="${sender === 'Du' ? 'user' : 'ai'}">${sender}:</span> ${text}`;
-      chatBox.appendChild(msg);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-  </script>
-
+  
 
   
 
