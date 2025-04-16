@@ -33,7 +33,7 @@
 </head>
 <body>
   <h1>Snake Spiel</h1>
-  <canvas id="game" width="1600" height="1600"></canvas>
+  <canvas id="game" width="800" height="800"></canvas>
   <div class="controls">
     <button onclick="changeDirection('up')">⬆️</button><br/>
     <button onclick="changeDirection('left')">⬅️</button>
@@ -50,77 +50,11 @@
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    const box = 20;
-    const canvasSize = 400;
+    const box = 20;  // Größe der Schlange
+    const canvasSize = 800;  // Größe des Canvas
     let snake = [{ x: 50, y: 50 }];
-let direction = 'right';
-const box = 20; // Größe der Schlange
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-let gameInterval;
-let lastMoveTime = 0;
-const speed = 100; // Steuerung der Geschwindigkeit (kleiner = schneller)
-
-// Steuerung der Schlange
-document.addEventListener("keydown", changeDirection);
-
-function changeDirection(event) {
-  if (event.key === "ArrowUp" && direction !== 'down') {
-    direction = 'up';
-  } else if (event.key === "ArrowDown" && direction !== 'up') {
-    direction = 'down';
-  } else if (event.key === "ArrowLeft" && direction !== 'right') {
-    direction = 'left';
-  } else if (event.key === "ArrowRight" && direction !== 'left') {
-    direction = 'right';
-  }
-}
-
-function update() {
-  const now = Date.now();
-
-  if (now - lastMoveTime >= speed) {
-    moveSnake();
-    lastMoveTime = now; // Aktualisiere die Zeit für den nächsten Move
-    draw();
-  }
-
-  requestAnimationFrame(update); // Nächsten Frame anfordern
-}
-
-function moveSnake() {
-  const head = { ...snake[0] };
-
-  if (direction === 'up') {
-    head.y -= box;
-  } else if (direction === 'down') {
-    head.y += box;
-  } else if (direction === 'left') {
-    head.x -= box;
-  } else if (direction === 'right') {
-    head.x += box;
-  }
-
-  snake.unshift(head); // Kopf hinzufügen
-  snake.pop(); // Entfernt das letzte Segment (Schwanz)
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous frame
-
-  // Zeichne die Schlange
-  for (let i = 0; i < snake.length; i++) {
-    ctx.fillStyle = "green";
-    ctx.fillRect(snake[i].x, snake[i].y, box, box);
-  }
-}
-
-function startGame() {
-  requestAnimationFrame(update); // Starte das Spiel mit der Animation
-}
-
-startGame();
-
+    let direction = 'right';
+    let food = { x: 100, y: 100 };
     let score = 0;
     let highscore = localStorage.getItem('highscore') || 0;
     document.getElementById('highscore').innerText = highscore;
@@ -130,6 +64,14 @@ startGame();
     bgMusic.volume = 0.2;
     bgMusic.play();
 
+    function changeDirection(dir) {
+      if (dir === 'up' && direction !== 'down') direction = 'up';
+      else if (dir === 'down' && direction !== 'up') direction = 'down';
+      else if (dir === 'left' && direction !== 'right') direction = 'left';
+      else if (dir === 'right' && direction !== 'left') direction = 'right';
+    }
+
+    // Steuerung der Tasteneingabe
     document.addEventListener('keydown', event => {
       const key = event.key;
       if (key === 'ArrowUp' && direction !== 'down') direction = 'up';
@@ -138,34 +80,22 @@ startGame();
       else if (key === 'ArrowRight' && direction !== 'left') direction = 'right';
     });
 
-    function changeDirection(dir) {
-      if (dir === 'up' && direction !== 'down') direction = 'up';
-      else if (dir === 'down' && direction !== 'up') direction = 'down';
-      else if (dir === 'left' && direction !== 'right') direction = 'left';
-      else if (dir === 'right' && direction !== 'left') direction = 'right';
+    function update() {
+      moveSnake();
+      draw();
     }
 
-    function draw() {
-      ctx.fillStyle = '#222';
-      ctx.fillRect(0, 0, canvasSize, canvasSize);
+    function moveSnake() {
+      const head = { ...snake[0] };
 
-      for (let i = 0; i < snake.length; i++) {
-        ctx.fillStyle = i === 0 ? '#0f0' : '#fff';
-        ctx.fillRect(snake[i].x, snake[i].y, box, box);
-      }
+      if (direction === 'up') head.y -= box;
+      if (direction === 'down') head.y += box;
+      if (direction === 'left') head.x -= box;
+      if (direction === 'right') head.x += box;
 
-      ctx.fillStyle = '#f00';
-      ctx.fillRect(food.x, food.y, box, box);
+      snake.unshift(head);
 
-      let snakeX = snake[0].x;
-      let snakeY = snake[0].y;
-
-      if (direction === 'left') snakeX -= box;
-      if (direction === 'right') snakeX += box;
-      if (direction === 'up') snakeY -= box;
-      if (direction === 'down') snakeY += box;
-
-      if (snakeX === food.x && snakeY === food.y) {
+      if (head.x === food.x && head.y === food.y) {
         score++;
         eatSound.play();
         food = {
@@ -176,38 +106,60 @@ startGame();
         snake.pop();
       }
 
-      const newHead = { x: snakeX, y: snakeY };
-
-      if (
-        snakeX < 0 || snakeX >= canvasSize ||
-        snakeY < 0 || snakeY >= canvasSize ||
-        collision(newHead, snake)
-      ) {
-        clearInterval(game);
-        gameOverSound.play();
-        bgMusic.pause();
-        if (score > highscore) {
-          localStorage.setItem('highscore', score);
-          document.getElementById('highscore').innerText = score;
-        }
-        alert('Game Over!');
-        return;
+      // Game Over Check
+      if (head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize || collision(head, snake)) {
+        gameOver();
       }
 
-      snake.unshift(newHead);
       document.getElementById('score').innerText = score;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Bildschirm löschen
+
+      // Schlange zeichnen
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? '#0f0' : '#fff';
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Nahrung zeichnen
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(food.x, food.y, box, box);
     }
 
     function collision(head, array) {
       for (let i = 0; i < array.length; i++) {
-        if (head.x === array[i].x && head.y === array[i].y) {
-          return true;
-        }
+        if (head.x === array[i].x && head.y === array[i].y) return true;
       }
       return false;
     }
 
-    const game = setInterval(draw, 100);
+    function gameOver() {
+      gameOverSound.play();
+      bgMusic.pause();
+      if (score > highscore) {
+        localStorage.setItem('highscore', score);
+        document.getElementById('highscore').innerText = score;
+      }
+      alert('Game Over!');
+      resetGame();
+    }
+
+    function resetGame() {
+      snake = [{ x: 50, y: 50 }];
+      direction = 'right';
+      score = 0;
+      document.getElementById('score').innerText = score;
+      startGame();
+    }
+
+    function startGame() {
+      setInterval(update, 100); // Update alle 100ms
+    }
+
+    startGame();
   </script>
 </body>
 </html>
+
