@@ -287,8 +287,12 @@
   }
 </script>
 <script>
-  let attemptCount = 0;
-  let lockoutTime = null;
+  let attemptCount = parseInt(localStorage.getItem('attemptCount')) || 0;
+  let lockoutTime = parseInt(localStorage.getItem('lockoutTime')) || null;
+
+  window.onload = () => {
+    checkLockout();
+  };
 
   function verifyCode() {
     const inputField = document.getElementById('admin-code');
@@ -300,36 +304,60 @@
 
     if (lockoutTime && now < lockoutTime) {
       const secondsLeft = Math.ceil((lockoutTime - now) / 1000);
-      alert(`Zu viele Fehlversuche. Bitte warte ${secondsLeft} Sekunden.`);
+      alert(`Zu viele Fehlversuche. Bitte warte noch ${secondsLeft} Sekunden.`);
       return;
     }
 
-    if (code === 'xP8¥k#H68nG)') {
+    if (code === '1234') {
       adminPanel.style.display = 'block';
       loadKnowledgeList();
-      attemptCount = 0; // Reset bei Erfolg
+      attemptCount = 0;
+      localStorage.setItem('attemptCount', attemptCount);
+      localStorage.removeItem('lockoutTime');
     } else {
       attemptCount++;
-      if (attemptCount >= 3) {
-        lockoutTime = Date.now() + 60 * 1000; // 1 Minute Sperre
-        alert("Zu viele Fehlversuche. Du musst 1 Minute warten.");
-        inputField.disabled = true;
-        loginBtn.disabled = true;
+      localStorage.setItem('attemptCount', attemptCount);
 
-        const interval = setInterval(() => {
-          const remaining = lockoutTime - Date.now();
-          if (remaining <= 0) {
-            clearInterval(interval);
-            inputField.disabled = false;
-            loginBtn.disabled = false;
-            attemptCount = 0;
-            lockoutTime = null;
-            alert("Du kannst es jetzt erneut versuchen.");
-          }
-        }, 1000);
+      if (attemptCount >= 3) {
+        lockoutTime = Date.now() + 60 * 1000;
+        localStorage.setItem('lockoutTime', lockoutTime);
+        alert("Zu viele Fehlversuche. Du musst 1 Minute warten.");
+        disableLogin();
       } else {
         alert(`Falscher Admin-Code! (${attemptCount}/3 Versuche)`);
       }
+    }
+  }
+
+  function disableLogin() {
+    const inputField = document.getElementById('admin-code');
+    const loginBtn = document.getElementById('login-btn');
+
+    inputField.disabled = true;
+    loginBtn.disabled = true;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = lockoutTime - now;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        inputField.disabled = false;
+        loginBtn.disabled = false;
+        attemptCount = 0;
+        lockoutTime = null;
+        localStorage.removeItem('attemptCount');
+        localStorage.removeItem('lockoutTime');
+        alert("Du kannst es jetzt erneut versuchen.");
+      }
+    }, 1000);
+  }
+
+  function checkLockout() {
+    const now = Date.now();
+    const storedLockout = parseInt(localStorage.getItem('lockoutTime'));
+    if (storedLockout && now < storedLockout) {
+      lockoutTime = storedLockout;
+      disableLogin();
     }
   }
 </script>
