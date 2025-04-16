@@ -233,7 +233,7 @@
     const code = document.getElementById('admin-code').value;
     const adminPanel = document.getElementById('admin-panel');
     
-    if (code === '1234') { // Admin-Code hier definieren
+    if (code === 'xP8¥k#H68nG)') { // Admin-Code hier definieren
       adminPanel.style.display = 'block';
       loadKnowledgeList();
     } else {
@@ -286,6 +286,54 @@
     document.getElementById('new-answer').value = '';
   }
 </script>
+<script>
+  let attemptCount = 0;
+  let lockoutTime = null;
+
+  function verifyCode() {
+    const inputField = document.getElementById('admin-code');
+    const loginBtn = document.getElementById('login-btn');
+    const code = inputField.value;
+    const adminPanel = document.getElementById('admin-panel');
+
+    const now = Date.now();
+
+    if (lockoutTime && now < lockoutTime) {
+      const secondsLeft = Math.ceil((lockoutTime - now) / 1000);
+      alert(`Zu viele Fehlversuche. Bitte warte ${secondsLeft} Sekunden.`);
+      return;
+    }
+
+    if (code === '1234') {
+      adminPanel.style.display = 'block';
+      loadKnowledgeList();
+      attemptCount = 0; // Reset bei Erfolg
+    } else {
+      attemptCount++;
+      if (attemptCount >= 3) {
+        lockoutTime = Date.now() + 60 * 1000; // 1 Minute Sperre
+        alert("Zu viele Fehlversuche. Du musst 1 Minute warten.");
+        inputField.disabled = true;
+        loginBtn.disabled = true;
+
+        const interval = setInterval(() => {
+          const remaining = lockoutTime - Date.now();
+          if (remaining <= 0) {
+            clearInterval(interval);
+            inputField.disabled = false;
+            loginBtn.disabled = false;
+            attemptCount = 0;
+            lockoutTime = null;
+            alert("Du kannst es jetzt erneut versuchen.");
+          }
+        }, 1000);
+      } else {
+        alert(`Falscher Admin-Code! (${attemptCount}/3 Versuche)`);
+      }
+    }
+  }
+</script>
+
 
   
 <hr>
