@@ -93,7 +93,13 @@
       if (direction === 'left') head.x -= box;
       if (direction === 'right') head.x += box;
 
-      snake.unshift(head);
+      // Kollision mit der Wand prüfen
+      if (head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize) {
+        gameOver();
+        return;
+      }
+
+      snake.unshift(head); // Kopf an den Anfang der Schlange anfügen
 
       if (head.x === food.x && head.y === food.y) {
         score++;
@@ -103,12 +109,13 @@
           y: Math.floor(Math.random() * (canvasSize / box)) * box
         };
       } else {
-        snake.pop();
+        snake.pop(); // Schwanzsegment entfernen
       }
 
-      // Game Over Check
-      if (head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize || collision(head, snake)) {
+      // Kollision mit dem Körper überprüfen
+      if (collision(head, snake.slice(1))) {
         gameOver();
+        return;
       }
 
       document.getElementById('score').innerText = score;
@@ -129,8 +136,11 @@
     }
 
     function collision(head, array) {
+      // Überprüfen, ob der Kopf mit dem Körper kollidiert
       for (let i = 0; i < array.length; i++) {
-        if (head.x === array[i].x && head.y === array[i].y) return true;
+        if (head.x === array[i].x && head.y === array[i].y) {
+          return true;
+        }
       }
       return false;
     }
