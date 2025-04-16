@@ -227,9 +227,7 @@
     }
     saveKnowledgeBase();
   }
-</script>
 
-<script>
   let attemptCount = parseInt(localStorage.getItem('attemptCount')) || 0;
   let lockoutTime = parseInt(localStorage.getItem('lockoutTime')) || null;
 
@@ -246,7 +244,7 @@
     const loginBtn = document.getElementById('login-btn');
     const code = inputField.value;
     const adminPanel = document.getElementById('admin-panel');
-    const correctCode = decodeBase64("aDRvOXAzcDBlMXI1bjdlM3Qy"); // entspricht "h4o9p3p0e1r5n7e3t2"
+    const correctCode = decodeBase64("aDRvOXAzcDBlMXI1bjdlM3Qy");
 
     const now = Date.now();
 
@@ -383,6 +381,3 @@
 
 </body>
 </html>
-
-
-
