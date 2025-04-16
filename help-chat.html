@@ -450,6 +450,10 @@
     loadKnowledgeList();
   }
 }
+function togglePassword() {
+  const input = document.getElementById('admin-code');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
 
 
 </script>
@@ -459,7 +463,9 @@
 <hr>
 <h2 class="text">Admin-Bereich</h2>
 <input type="password" id="admin-code" placeholder="Admin-Code eingeben">
+<button onclick="togglePassword()" style="margin-left: 5px;">👁️</button>
 <button onclick="verifyCode()" id="login-btn">Login</button>
+
 
 <div id="admin-panel" style="display:none; background:white; padding:10px; margin-top:10px;">
   <h3>Wissensbasis bearbeiten</h3>
