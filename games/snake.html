@@ -169,6 +169,12 @@
     }
 
     startGame();
+    document.addEventListener("keydown", function(event) {
+    if (event.key === "w" || event.key === "ArrowUp") changeDirection('up');
+    if (event.key === "a" || event.key === "ArrowLeft") changeDirection('left');
+    if (event.key === "s" || event.key === "ArrowDown") changeDirection('down');
+    if (event.key === "d" || event.key === "ArrowRight") changeDirection('right');
+});
   </script>
 </body>
 </html>
