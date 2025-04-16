@@ -52,13 +52,75 @@
     const ctx = canvas.getContext('2d');
     const box = 20;
     const canvasSize = 400;
-    let snake = [];
-    snake[0] = { x: 9 * box, y: 10 * box };
-    let direction = '';
-    let food = {
-      x: Math.floor(Math.random() * (canvasSize / box)) * box,
-      y: Math.floor(Math.random() * (canvasSize / box)) * box
-    };
+    let snake = [{ x: 50, y: 50 }];
+let direction = 'right';
+const box = 20; // Größe der Schlange
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+let gameInterval;
+let lastMoveTime = 0;
+const speed = 100; // Steuerung der Geschwindigkeit (kleiner = schneller)
+
+// Steuerung der Schlange
+document.addEventListener("keydown", changeDirection);
+
+function changeDirection(event) {
+  if (event.key === "ArrowUp" && direction !== 'down') {
+    direction = 'up';
+  } else if (event.key === "ArrowDown" && direction !== 'up') {
+    direction = 'down';
+  } else if (event.key === "ArrowLeft" && direction !== 'right') {
+    direction = 'left';
+  } else if (event.key === "ArrowRight" && direction !== 'left') {
+    direction = 'right';
+  }
+}
+
+function update() {
+  const now = Date.now();
+
+  if (now - lastMoveTime >= speed) {
+    moveSnake();
+    lastMoveTime = now; // Aktualisiere die Zeit für den nächsten Move
+    draw();
+  }
+
+  requestAnimationFrame(update); // Nächsten Frame anfordern
+}
+
+function moveSnake() {
+  const head = { ...snake[0] };
+
+  if (direction === 'up') {
+    head.y -= box;
+  } else if (direction === 'down') {
+    head.y += box;
+  } else if (direction === 'left') {
+    head.x -= box;
+  } else if (direction === 'right') {
+    head.x += box;
+  }
+
+  snake.unshift(head); // Kopf hinzufügen
+  snake.pop(); // Entfernt das letzte Segment (Schwanz)
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous frame
+
+  // Zeichne die Schlange
+  for (let i = 0; i < snake.length; i++) {
+    ctx.fillStyle = "green";
+    ctx.fillRect(snake[i].x, snake[i].y, box, box);
+  }
+}
+
+function startGame() {
+  requestAnimationFrame(update); // Starte das Spiel mit der Animation
+}
+
+startGame();
+
     let score = 0;
     let highscore = localStorage.getItem('highscore') || 0;
     document.getElementById('highscore').innerText = highscore;
