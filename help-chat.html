@@ -229,17 +229,85 @@
   }
 </script>
 <script>
+  let attemptCount = parseInt(localStorage.getItem('attemptCount')) || 0;
+  let lockoutTime = parseInt(localStorage.getItem('lockoutTime')) || null;
+
+  window.onload = () => {
+    checkLockout();
+  };
+
+  function decodeBase64(str) {
+    return atob(str);
+  }
+
   function verifyCode() {
-    const code = document.getElementById('admin-code').value;
+    const inputField = document.getElementById('admin-code');
+    const loginBtn = document.getElementById('login-btn');
+    const code = inputField.value;
     const adminPanel = document.getElementById('admin-panel');
-    
-    if (code === 'xP8¥k#H68nG)') { // Admin-Code hier definieren
+    const correctCode = decodeBase64("MTIzNA=="); // "1234"
+
+    const now = Date.now();
+
+    if (lockoutTime && now < lockoutTime) {
+      const secondsLeft = Math.ceil((lockoutTime - now) / 1000);
+      alert(`Zu viele Fehlversuche. Bitte warte noch ${secondsLeft} Sekunden.`);
+      return;
+    }
+
+    if (code === correctCode) {
       adminPanel.style.display = 'block';
       loadKnowledgeList();
+      attemptCount = 0;
+      localStorage.setItem('attemptCount', attemptCount);
+      localStorage.removeItem('lockoutTime');
     } else {
-      alert('Falscher Admin-Code!');
+      attemptCount++;
+      localStorage.setItem('attemptCount', attemptCount);
+
+      if (attemptCount >= 3) {
+        lockoutTime = Date.now() + 60 * 1000;
+        localStorage.setItem('lockoutTime', lockoutTime);
+        alert("Zu viele Fehlversuche. Du musst 1 Minute warten.");
+        disableLogin();
+      } else {
+        alert(`Falscher Admin-Code! (${attemptCount}/3 Versuche)`);
+      }
     }
   }
+
+  function disableLogin() {
+    const inputField = document.getElementById('admin-code');
+    const loginBtn = document.getElementById('login-btn');
+
+    inputField.disabled = true;
+    loginBtn.disabled = true;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = lockoutTime - now;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        inputField.disabled = false;
+        loginBtn.disabled = false;
+        attemptCount = 0;
+        lockoutTime = null;
+        localStorage.removeItem('attemptCount');
+        localStorage.removeItem('lockoutTime');
+        alert("Du kannst es jetzt erneut versuchen.");
+      }
+    }, 1000);
+  }
+
+  function checkLockout() {
+    const now = Date.now();
+    const storedLockout = parseInt(localStorage.getItem('lockoutTime'));
+    if (storedLockout && now < storedLockout) {
+      lockoutTime = storedLockout;
+      disableLogin();
+    }
+  }
+
 
   function addKnowledge() {
     const q = document.getElementById('new-question').value.trim().toLowerCase();
