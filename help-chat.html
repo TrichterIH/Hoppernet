@@ -228,6 +228,65 @@
     saveKnowledgeBase();
   }
 </script>
+<script>
+  function verifyCode() {
+    const code = document.getElementById('admin-code').value;
+    const adminPanel = document.getElementById('admin-panel');
+    
+    if (code === '1234') { // Admin-Code hier definieren
+      adminPanel.style.display = 'block';
+      loadKnowledgeList();
+    } else {
+      alert('Falscher Admin-Code!');
+    }
+  }
+
+  function loadKnowledgeList() {
+    const listDiv = document.getElementById('knowledge-list');
+    listDiv.innerHTML = '';
+
+    for (const question in knowledgeBase) {
+      const questionDiv = document.createElement('div');
+      questionDiv.style.marginBottom = '10px';
+
+      const qTitle = document.createElement('strong');
+      qTitle.textContent = question;
+      questionDiv.appendChild(qTitle);
+
+      const ul = document.createElement('ul');
+      for (const answer in knowledgeBase[question]) {
+        const li = document.createElement('li');
+        li.textContent = `${answer} (Anzahl: ${knowledgeBase[question][answer].count}, Bewertung: ${knowledgeBase[question][answer].rating})`;
+        ul.appendChild(li);
+      }
+
+      questionDiv.appendChild(ul);
+      listDiv.appendChild(questionDiv);
+    }
+  }
+
+  function addKnowledge() {
+    const q = document.getElementById('new-question').value.trim().toLowerCase();
+    const a = document.getElementById('new-answer').value.trim();
+
+    if (!q || !a) return alert("Bitte Frage und Antwort ausfüllen!");
+
+    if (!knowledgeBase[q]) knowledgeBase[q] = {};
+    if (!knowledgeBase[q][a]) {
+      knowledgeBase[q][a] = { count: 1, rating: 0 };
+    } else {
+      knowledgeBase[q][a].count++;
+    }
+
+    saveKnowledgeBase();
+    fuse.setCollection(Object.keys(knowledgeBase).map(q => ({ question: q })));
+    loadKnowledgeList();
+
+    document.getElementById('new-question').value = '';
+    document.getElementById('new-answer').value = '';
+  }
+</script>
+
   
 <hr>
 <h2 class="text">Admin-Bereich</h2>
